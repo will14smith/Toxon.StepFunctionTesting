@@ -1,0 +1,15 @@
+{
+  "packages": {
+    ".": {
+      "package-name": "Toxon.StepFunctionTesting",
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "xml",
+          "path": "Toxon.StepFunctionTesting/Toxon.StepFunctionTesting.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        }
+      ]
+    }
+  }
+}

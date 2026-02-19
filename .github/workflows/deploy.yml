@@ -1,0 +1,50 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TEST_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Restore
+        run: dotnet restore Toxon.StepFunctionTesting.slnx
+
+      - name: Build
+        run: dotnet build Toxon.StepFunctionTesting.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Release
+        id: release
+        uses: googleapis/release-please-action@v4
+
+      - name: Pack NuGet package
+        if: ${{ steps.release.outputs.release_created }}
+        run: dotnet pack Toxon.StepFunctionTesting/Toxon.StepFunctionTesting.csproj --configuration Release --no-build -o artifacts/
+
+      - name: Publish package to NuGet.org
+        if: ${{ steps.release.outputs.release_created }}
+        run: dotnet nuget push ./artifacts/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

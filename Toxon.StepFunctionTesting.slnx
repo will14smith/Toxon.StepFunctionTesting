@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj" />
+  <Project Path="Toxon.StepFunctionTesting/Toxon.StepFunctionTesting.csproj" />
+</Solution>
