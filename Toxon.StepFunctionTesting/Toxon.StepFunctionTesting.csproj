@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <PackageId>Toxon.StepFunctionTesting</PackageId>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>0.1.0</Version>
+        <Version>0.2.0</Version>
         <Authors>will14smith</Authors>
         <Description>Framework for unit testing AWS Step Functions state machine behavior using TestState and mocks</Description>
         <RepositoryUrl>https://github.com/will14smith/Toxon.StepFunctionTesting</RepositoryUrl>
@@ -14,11 +14,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.502.32" />
+      <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.502.32"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Include="..\README.md" Pack="true" PackagePath="\" />
+      <None Include="..\README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
 </Project>
