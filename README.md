@@ -80,7 +80,7 @@ var mocks = new Dictionary<string, IMockProvider>
 - If `RequireMocks` is `true`, ALL task states must have mocks.
 - `SkipWaitStates` is recommended for test speed, but will not evaluate any expression for wait duration or any assignments/state transformation on Wait states
 - Parallel states are handled by running branches and combining outputs.
-- Map states currently require a mock provider when encountered.
+- Map states are supported for INLINE maps but not for DISTRIBUTED, however both can be mocked. 
 
 ## CI usage (GitHub Actions)
 

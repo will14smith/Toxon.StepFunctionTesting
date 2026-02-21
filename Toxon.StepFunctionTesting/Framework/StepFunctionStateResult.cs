@@ -5,7 +5,7 @@ namespace Toxon.StepFunctionTesting.Framework;
 
 public abstract record StepFunctionStateResult
 {
-    public record Success(string? NextStateName, string Output, string Variables) : StepFunctionStateResult;
+    public record Success(string? NextStateName, string Output, string Variables, InspectionData InspectionData) : StepFunctionStateResult;
     public record Failed(string Error, string Cause) : StepFunctionStateResult;
     public record CaughtError(string NextStateName, string Output, string Variables) : StepFunctionStateResult;
     public record Retriable : StepFunctionStateResult;
@@ -17,7 +17,8 @@ public abstract record StepFunctionStateResult
             return new Success(
                 NextStateName: response.NextState,
                 Output: response.Output,
-                Variables: response.InspectionData.Variables
+                Variables: response.InspectionData.Variables,
+                InspectionData: response.InspectionData
             );
         }
 
