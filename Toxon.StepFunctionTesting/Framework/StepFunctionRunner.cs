@@ -5,16 +5,16 @@ using Amazon.StepFunctions.Model;
 
 namespace Toxon.StepFunctionTesting.Framework;
 
-public class StepFunctionRunner(
+public partial class StepFunctionRunner(
     IAmazonStepFunctions stepFunctions,
     string stateMachineDefinition,
-    Framework.StepFunctionRunnerOptions options)
+    StepFunctionRunnerOptions options)
 {
     private const string DefaultQueryLanguage = "JSONPath";
     
     public async Task<StepFunctionStateResult> RunAsync(
         string input,
-        IReadOnlyDictionary<string, Framework.IMockProvider> mocks,
+        IReadOnlyDictionary<string, IMockProvider> mocks,
         string? startAt = null,
         CancellationToken cancellationToken = default)
     {
@@ -36,14 +36,13 @@ public class StepFunctionRunner(
             "{}"
         );
         
-        var (_, result) = await RunAsync(executionContext, stateContext, cancellationToken);
+        var (_, result) = await RunToCompletionAsync(executionContext, stateContext, cancellationToken);
 
         return result;
     }
 
-    private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> RunAsync(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
+    private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> RunToCompletionAsync(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
     {
-        // TODO run to completion instead of just one state execution
         while (true)
         {
             (executionContext, var result) = await ExecuteState(executionContext, stateContext, cancellationToken);
@@ -82,7 +81,6 @@ public class StepFunctionRunner(
 
     private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> ExecuteState(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
     {
-        // TODO handle Wait/Map/Parallel since they can't be directly ran in TestState and require special handling
         var stateName = stateContext.StateName;
         var stateElement = executionContext.GetStateElement(stateName);
 
@@ -112,73 +110,10 @@ public class StepFunctionRunner(
         if (stateElement.IsParallelState() && !executionContext.Mocks.ContainsKey(stateName))
         {
             // Parallel states aren't supported by TestState, so if it's not mocked we need to handle it ourselves
-            
             return await ExecuteParallelState(executionContext, stateContext, cancellationToken);
         }
         
         return await TestState(executionContext, stateContext, cancellationToken);
-    }
-
-    private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> ExecuteParallelState(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
-    {
-        var stateName = stateContext.StateName;
-        var stateElement = executionContext.GetStateElement(stateName);
-        
-        if (!stateElement.TryGetProperty("Branches", out var branchesElement) || branchesElement.ValueKind != JsonValueKind.Array)
-        {
-            throw new InvalidOperationException($"Parallel state '{stateName}' must define a Branches array.");
-        }
-
-        var branchOutputs = new List<JsonElement>();
-
-        foreach (var branch in branchesElement.EnumerateArray())
-        {
-            var branchStartAt = branch.GetProperty("StartAt").GetString() ?? throw new InvalidOperationException("Branch definition must contain a StartAt property.");
-            
-            var branchExecutionContext = executionContext.AsBranch(branch);
-            var branchStateContext = stateContext with
-            {
-                StateName = branchStartAt,
-                QueryLanguage = branch.GetQueryLanguage() ?? stateContext.QueryLanguage
-            };
-            
-            (branchExecutionContext, var branchResult) = await RunAsync(branchExecutionContext, branchStateContext, cancellationToken);
-            executionContext = executionContext.UpdateFromBranch(branchExecutionContext);
-            
-            switch (branchResult)
-            {
-                case StepFunctionStateResult.Success success:
-                {
-                    using var document = JsonDocument.Parse(success.Output);
-                    branchOutputs.Add(document.RootElement.Clone());
-                    break;
-                }
-
-                case StepFunctionStateResult.Failed failed:
-                    var errorMock = new MockInput
-                    {
-                        ErrorOutput = new MockErrorOutput
-                        {
-                            Error = failed.Error,
-                            Cause = failed.Cause,
-                        }
-                    };
-                    
-                    return await TestState(executionContext, stateContext, errorMock, cancellationToken);
-                
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(branchResult), null, $"Unexpected branch result type: {branchResult}.");
-            }
-        }
-        
-        var output = JsonSerializer.Serialize(branchOutputs);
-        var mock = new MockInput
-        {
-            Result = output,
-            FieldValidationMode = MockResponseValidationMode.NONE
-        };
-        
-        return await TestState(executionContext, stateContext, mock, cancellationToken);
     }
 
     private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> TestState(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
@@ -223,7 +158,7 @@ public class StepFunctionRunner(
 
             if (stateElement.RequiresTaskToken())
             {
-                request.Context = "{\"Task\": {\"Token\": \"test-token\"}}";
+                request.Context = $"{{\"Task\": {{\"Token\": \"{Guid.NewGuid()}\"}}}}";
             }
         }
         else if (options.RequireMocks && stateElement.IsTaskState())

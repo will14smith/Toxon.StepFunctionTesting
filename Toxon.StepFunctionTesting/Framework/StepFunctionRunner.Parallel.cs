@@ -1,0 +1,70 @@
+﻿using System.Text.Json;
+using Amazon.StepFunctions;
+using Amazon.StepFunctions.Model;
+
+namespace Toxon.StepFunctionTesting.Framework;
+
+public partial class StepFunctionRunner
+{
+    private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> ExecuteParallelState(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
+    {
+        var stateName = stateContext.StateName;
+        var stateElement = executionContext.GetStateElement(stateName);
+
+        if (!stateElement.TryGetProperty("Branches", out var branchesElement) || branchesElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidOperationException($"Parallel state '{stateName}' must define a Branches array.");
+        }
+
+        var branchOutputs = new List<JsonElement>();
+
+        foreach (var branch in branchesElement.EnumerateArray())
+        {
+            var branchStartAt = branch.GetProperty("StartAt").GetString() ?? throw new InvalidOperationException("Branch definition must contain a StartAt property.");
+
+            var branchExecutionContext = executionContext.AsBranch(branch);
+            var branchStateContext = stateContext with
+            {
+                StateName = branchStartAt,
+                QueryLanguage = branch.GetQueryLanguage() ?? stateContext.QueryLanguage
+            };
+
+            (branchExecutionContext, var branchResult) = await RunToCompletionAsync(branchExecutionContext, branchStateContext, cancellationToken);
+            executionContext = executionContext.UpdateFromBranch(branchExecutionContext);
+
+            switch (branchResult)
+            {
+                case StepFunctionStateResult.Success success:
+                {
+                    using var document = JsonDocument.Parse(success.Output);
+                    branchOutputs.Add(document.RootElement.Clone());
+                    break;
+                }
+
+                case StepFunctionStateResult.Failed failed:
+                    var errorMock = new MockInput
+                    {
+                        ErrorOutput = new MockErrorOutput
+                        {
+                            Error = failed.Error,
+                            Cause = failed.Cause,
+                        }
+                    };
+
+                    return await TestState(executionContext, stateContext, errorMock, cancellationToken);
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(branchResult), null, $"Unexpected branch result type: {branchResult}.");
+            }
+        }
+
+        var output = JsonSerializer.Serialize(branchOutputs);
+        var mock = new MockInput
+        {
+            Result = output,
+            FieldValidationMode = MockResponseValidationMode.NONE
+        };
+
+        return await TestState(executionContext, stateContext, mock, cancellationToken);
+    }
+}
