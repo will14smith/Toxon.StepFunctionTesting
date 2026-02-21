@@ -9,8 +9,16 @@ public partial class StepFunctionRunner
     private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> ExecuteParallelState(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
     {
         var stateName = stateContext.StateName;
+        
+        // if it's mocked we can just run the test state which will use the mock
+        if (executionContext.Mocks.ContainsKey(stateName))
+        {
+            return await TestState(executionContext, stateContext, cancellationToken);
+        }
+        
+        // otherwise:
+        // 1. execute each branch and collect the results
         var stateElement = executionContext.GetStateElement(stateName);
-
         if (!stateElement.TryGetProperty("Branches", out var branchesElement) || branchesElement.ValueKind != JsonValueKind.Array)
         {
             throw new InvalidOperationException($"Parallel state '{stateName}' must define a Branches array.");
@@ -22,15 +30,13 @@ public partial class StepFunctionRunner
         {
             var branchStartAt = branch.GetProperty("StartAt").GetString() ?? throw new InvalidOperationException("Branch definition must contain a StartAt property.");
 
-            var branchExecutionContext = executionContext.AsBranch(branch);
             var branchStateContext = stateContext with
             {
                 StateName = branchStartAt,
                 QueryLanguage = branch.GetQueryLanguage() ?? stateContext.QueryLanguage
             };
 
-            (branchExecutionContext, var branchResult) = await RunToCompletionAsync(branchExecutionContext, branchStateContext, cancellationToken);
-            executionContext = executionContext.UpdateFromBranch(branchExecutionContext);
+            (executionContext, var branchResult) = await RunToCompletionAsync(executionContext, branchStateContext, cancellationToken);
 
             switch (branchResult)
             {
@@ -51,6 +57,7 @@ public partial class StepFunctionRunner
                         }
                     };
 
+                    // failures can be handled as a mock on the Parallel state
                     return await TestState(executionContext, stateContext, errorMock, cancellationToken);
 
                 default:
@@ -58,6 +65,7 @@ public partial class StepFunctionRunner
             }
         }
 
+        // 2. set up a mock for the parallel state and run the test state (which will check any output processing, error handling, etc)
         var output = JsonSerializer.Serialize(branchOutputs);
         var mock = new MockInput
         {

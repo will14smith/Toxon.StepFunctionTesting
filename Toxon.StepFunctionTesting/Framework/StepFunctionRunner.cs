@@ -95,21 +95,17 @@ public partial class StepFunctionRunner(
             
             // TODO technically wait state could have input/output processing
 
-            return (executionContext, new StepFunctionStateResult.Success(nextStateName, stateContext.Input, stateContext.Variables));
+            return (executionContext, new StepFunctionStateResult.Success(nextStateName, stateContext.Input, stateContext.Variables, new InspectionData()));
         }
         
-        if (stateElement.IsMapState() && !executionContext.Mocks.ContainsKey(stateName))
+        // Map & Parallel states aren't supported by TestState, so they need special handling
+        if (stateElement.IsMapState())
         {
-            // Maps are complex and require special handling to get the correct input/output structure for each iteration
-            // Requiring a mock for maps keeps the implementation simpler and allows for more controlled testing of map behavior
-            // The map item processor can be tested separately by using a custom startState
-            
-            throw new InvalidOperationException($"Map state '{stateName}' requires a mock provider to run.");
+            return await ExecuteMapState(executionContext, stateContext, cancellationToken);
         }
         
-        if (stateElement.IsParallelState() && !executionContext.Mocks.ContainsKey(stateName))
+        if (stateElement.IsParallelState())
         {
-            // Parallel states aren't supported by TestState, so if it's not mocked we need to handle it ourselves
             return await ExecuteParallelState(executionContext, stateContext, cancellationToken);
         }
         
@@ -137,7 +133,7 @@ public partial class StepFunctionRunner(
 
         var request = new TestStateRequest
         {
-            Definition = stateMachineDefinition,
+            Definition = executionContext.RootElement.GetRawText(),
             
             StateName = stateName,
             Input = stateContext.Input,
@@ -170,5 +166,33 @@ public partial class StepFunctionRunner(
         var result = StepFunctionStateResult.FromResponse(response);
         
         return (executionContext, result);
+    }
+    
+    private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> ExecutePassStateForJsonPath(StepFunctionExecutionContext executionContext, string path, string input, string variables, CancellationToken cancellationToken = default)
+    {
+        const string stateName = "$$VirtualItemSelector";
+        var stateContext = new StepFunctionStateContext(stateName, "JSONPath", input, variables);
+        var definition = $"{{ \"StartAt\": \"{stateName}\", \"States\": {{ \"{stateName}\": {{ \"Type\": \"Pass\", \"End\": true, \"InputPath\": \"{path}\" }} }}, \"QueryLanguage\": \"JSONPath\" }}";
+        
+        using var document = JsonDocument.Parse(definition);
+        var branchExecutionContext = executionContext with { RootElement = document.RootElement };
+        
+        (branchExecutionContext, var result) = await TestState(branchExecutionContext, stateContext, null, cancellationToken);
+
+        return (branchExecutionContext with { RootElement = executionContext.RootElement }, result);
+    }
+    
+    private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> ExecutePassStateForJsonAta(StepFunctionExecutionContext executionContext, JsonElement expression, string input, string variables, CancellationToken cancellationToken = default)
+    {
+        const string stateName = "$$VirtualItemSelector";
+        var stateContext = new StepFunctionStateContext(stateName, "JSONata", input, variables);
+        var definition = $"{{ \"StartAt\": \"{stateName}\", \"States\": {{ \"{stateName}\": {{ \"Type\": \"Pass\", \"End\": true, \"Output\": {expression.GetRawText()} }} }}, \"QueryLanguage\": \"JSONata\" }}";
+        
+        using var document = JsonDocument.Parse(definition);
+        var branchExecutionContext = executionContext with { RootElement = document.RootElement };
+        
+        (branchExecutionContext, var result) = await TestState(branchExecutionContext, stateContext, null, cancellationToken);
+
+        return (branchExecutionContext with { RootElement = executionContext.RootElement }, result);
     }
 }
