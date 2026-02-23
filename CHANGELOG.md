@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/will14smith/Toxon.StepFunctionTesting/compare/Toxon.StepFunctionTesting-v0.3.0...Toxon.StepFunctionTesting-v1.0.0) (2026-02-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* Pass context to mock provider interface ([#4](https://github.com/will14smith/Toxon.StepFunctionTesting/issues/4))
+
+### Features
+
+* Pass context to mock provider interface ([#4](https://github.com/will14smith/Toxon.StepFunctionTesting/issues/4)) ([e1f8da2](https://github.com/will14smith/Toxon.StepFunctionTesting/commit/e1f8da28f7adf928a8321285138c1633c584983d))
+
 ## [0.3.0](https://github.com/will14smith/Toxon.StepFunctionTesting/compare/Toxon.StepFunctionTesting-v0.2.0...Toxon.StepFunctionTesting-v0.3.0) (2026-02-21)
 
 
