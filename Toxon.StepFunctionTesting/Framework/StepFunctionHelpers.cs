@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Toxon.StepFunctionTesting.Framework;
 
-public static class StepFunctionHelpers
+internal static class StepFunctionHelpers
 {
     public static string? GetQueryLanguage(this JsonElement element) => element.TryGetProperty("QueryLanguage", out var queryLanguage) ? queryLanguage.GetString() : null;
 

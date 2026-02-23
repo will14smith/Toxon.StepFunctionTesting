@@ -1,0 +1,80 @@
+﻿[assembly: System.Reflection.AssemblyMetadata("RepositoryUrl", "https://github.com/will14smith/Toxon.StepFunctionTesting")]
+[assembly: System.Runtime.Versioning.TargetFramework(".NETCoreApp,Version=v8.0", FrameworkDisplayName=".NET 8.0")]
+namespace Toxon.StepFunctionTesting.Framework
+{
+    public interface IMockProvider
+    {
+        Amazon.StepFunctions.Model.MockInput GetMock(int attempt);
+    }
+    public sealed class MockSequence : Toxon.StepFunctionTesting.Framework.IMockProvider
+    {
+        public MockSequence(Toxon.StepFunctionTesting.Framework.MockSequenceTailMode tailMode = 0) { }
+        public Amazon.StepFunctions.Model.MockInput GetMock(int index) { }
+        public Toxon.StepFunctionTesting.Framework.MockSequence ThenFail(string error, string? cause = null) { }
+        public Toxon.StepFunctionTesting.Framework.MockSequence ThenReturn(string jsonResult, Amazon.StepFunctions.MockResponseValidationMode? validationMode = null) { }
+    }
+    public enum MockSequenceTailMode
+    {
+        RepeatLast = 0,
+        ThrowException = 1,
+    }
+    public class StepFunctionExecutionContext : System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionExecutionContext>
+    {
+        public StepFunctionExecutionContext(System.Text.Json.JsonElement RootElement, System.Collections.Generic.IReadOnlyDictionary<string, Toxon.StepFunctionTesting.Framework.IMockProvider> Mocks, System.Collections.Immutable.ImmutableDictionary<string, int> Attempts) { }
+        public System.Collections.Immutable.ImmutableDictionary<string, int> Attempts { get; init; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, Toxon.StepFunctionTesting.Framework.IMockProvider> Mocks { get; init; }
+        public string? QueryLanguage { get; }
+        public System.Text.Json.JsonElement RootElement { get; init; }
+        public System.Text.Json.JsonElement GetStateElement(string stateName) { }
+    }
+    public class StepFunctionRunner
+    {
+        public StepFunctionRunner(Amazon.StepFunctions.IAmazonStepFunctions stepFunctions, string stateMachineDefinition, Toxon.StepFunctionTesting.Framework.StepFunctionRunnerOptions options) { }
+        public System.Threading.Tasks.Task<Toxon.StepFunctionTesting.Framework.StepFunctionStateResult> RunAsync(string input, System.Collections.Generic.IReadOnlyDictionary<string, Toxon.StepFunctionTesting.Framework.IMockProvider> mocks, string? startAt = null, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class StepFunctionRunnerOptions
+    {
+        public StepFunctionRunnerOptions() { }
+        public bool RequireMocks { get; init; }
+        public string? RoleArn { get; init; }
+        public bool SkipWaitStates { get; init; }
+    }
+    public class StepFunctionStateContext : System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateContext>
+    {
+        public StepFunctionStateContext(string StateName, string QueryLanguage, string Input, string Variables) { }
+        public string Input { get; init; }
+        public string QueryLanguage { get; init; }
+        public string StateName { get; init; }
+        public string Variables { get; init; }
+    }
+    public abstract class StepFunctionStateResult : System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateResult>
+    {
+        protected StepFunctionStateResult() { }
+        public static Toxon.StepFunctionTesting.Framework.StepFunctionStateResult FromResponse(Amazon.StepFunctions.Model.TestStateResponse response) { }
+        public class CaughtError : Toxon.StepFunctionTesting.Framework.StepFunctionStateResult, System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateResult.CaughtError>
+        {
+            public CaughtError(string NextStateName, string Output, string Variables) { }
+            public string NextStateName { get; init; }
+            public string Output { get; init; }
+            public string Variables { get; init; }
+        }
+        public class Failed : Toxon.StepFunctionTesting.Framework.StepFunctionStateResult, System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateResult.Failed>
+        {
+            public Failed(string Error, string Cause) { }
+            public string Cause { get; init; }
+            public string Error { get; init; }
+        }
+        public class Retriable : Toxon.StepFunctionTesting.Framework.StepFunctionStateResult, System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateResult.Retriable>
+        {
+            public Retriable() { }
+        }
+        public class Success : Toxon.StepFunctionTesting.Framework.StepFunctionStateResult, System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateResult.Success>
+        {
+            public Success(string? NextStateName, string Output, string Variables, Amazon.StepFunctions.Model.InspectionData InspectionData) { }
+            public Amazon.StepFunctions.Model.InspectionData InspectionData { get; init; }
+            public string? NextStateName { get; init; }
+            public string Output { get; init; }
+            public string Variables { get; init; }
+        }
+    }
+}
