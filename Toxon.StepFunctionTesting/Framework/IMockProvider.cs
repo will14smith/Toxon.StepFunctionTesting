@@ -4,5 +4,5 @@ namespace Toxon.StepFunctionTesting.Framework;
 
 public interface IMockProvider
 {
-    MockInput GetMock(int attempt);
+    MockInput GetMock(int attempt, StepFunctionStateContext context);
 }
