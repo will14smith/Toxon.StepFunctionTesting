@@ -42,7 +42,7 @@ public sealed class MockSequence(MockSequenceTailMode tailMode = MockSequenceTai
         return this;
     }
 
-    public MockInput GetMock(int index)
+    public MockInput GetMock(int index, StepFunctionStateContext _)
     {
         if (index >= _steps.Count)
         {

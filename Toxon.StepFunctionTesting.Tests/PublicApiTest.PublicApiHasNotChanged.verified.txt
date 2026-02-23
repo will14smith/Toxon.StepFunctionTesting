@@ -4,12 +4,12 @@ namespace Toxon.StepFunctionTesting.Framework
 {
     public interface IMockProvider
     {
-        Amazon.StepFunctions.Model.MockInput GetMock(int attempt);
+        Amazon.StepFunctions.Model.MockInput GetMock(int attempt, Toxon.StepFunctionTesting.Framework.StepFunctionStateContext context);
     }
     public sealed class MockSequence : Toxon.StepFunctionTesting.Framework.IMockProvider
     {
         public MockSequence(Toxon.StepFunctionTesting.Framework.MockSequenceTailMode tailMode = 0) { }
-        public Amazon.StepFunctions.Model.MockInput GetMock(int index) { }
+        public Amazon.StepFunctions.Model.MockInput GetMock(int index, Toxon.StepFunctionTesting.Framework.StepFunctionStateContext _) { }
         public Toxon.StepFunctionTesting.Framework.MockSequence ThenFail(string error, string? cause = null) { }
         public Toxon.StepFunctionTesting.Framework.MockSequence ThenReturn(string jsonResult, Amazon.StepFunctions.MockResponseValidationMode? validationMode = null) { }
     }

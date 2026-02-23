@@ -120,7 +120,7 @@ public partial class StepFunctionRunner(
         MockInput? mock = null;
         if (executionContext.Mocks.TryGetValue(stateName, out var mockProvider))
         {
-            mock = mockProvider.GetMock(attempt);
+            mock = mockProvider.GetMock(attempt, stateContext);
         }
         
         return await TestState(executionContext, stateContext, mock, cancellationToken);
