@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/will14smith/Toxon.StepFunctionTesting/compare/Toxon.StepFunctionTesting-v1.0.0...Toxon.StepFunctionTesting-v1.1.0) (2026-02-24)
+
+
+### Features
+
+* include invocation history in result ([#7](https://github.com/will14smith/Toxon.StepFunctionTesting/issues/7)) ([6ca95c5](https://github.com/will14smith/Toxon.StepFunctionTesting/commit/6ca95c5a153d75c79a0a795e107e99da86078734))
+
 ## [1.0.0](https://github.com/will14smith/Toxon.StepFunctionTesting/compare/Toxon.StepFunctionTesting-v0.3.0...Toxon.StepFunctionTesting-v1.0.0) (2026-02-23)
 
 
