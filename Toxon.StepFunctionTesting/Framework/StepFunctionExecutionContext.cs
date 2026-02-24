@@ -6,11 +6,12 @@ namespace Toxon.StepFunctionTesting.Framework;
 public record StepFunctionExecutionContext(
     JsonElement RootElement,
     IReadOnlyDictionary<string, IMockProvider> Mocks,
-    ImmutableDictionary<string, int> Attempts
+    ImmutableDictionary<string, int> Attempts,
+    ImmutableList<StepFunctionStateInvocation> Invocations
 )
 {
     public string? QueryLanguage => RootElement.GetQueryLanguage();
-
+    
     public JsonElement GetStateElement(string stateName) => GetStateElement(RootElement, stateName) 
         ?? throw new InvalidOperationException($"State '{stateName}' was not found in the definition.");
     

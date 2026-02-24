@@ -17,10 +17,10 @@ public abstract class TestBase
         new StepFunctionRunnerOptions { RequireMocks = true }
     );
     
-    protected static void AssertSuccess(StepFunctionStateResult result, string expectedOutput)
+    protected static void AssertSuccess(StepFunctionResult result, string expectedOutput)
     {
-        Assert.That(result, Is.TypeOf<StepFunctionStateResult.Success>(), $"Expected result to be a success.\nActual:\n{result}");
-        var successResult = (StepFunctionStateResult.Success)result;
+        Assert.That(result.Result, Is.TypeOf<StepFunctionStateResult.Success>(), $"Expected result to be a success.\nActual:\n{result}");
+        var successResult = (StepFunctionStateResult.Success)result.Result;
 
         var expectedJson = JsonNode.Parse(expectedOutput);
         var actualJson = JsonNode.Parse(successResult.Output);
@@ -29,10 +29,10 @@ public abstract class TestBase
         Assert.That(diff.Operations, Is.Empty, $"Expected and actual JSON do not match.\nExpected:\n{expectedJson}\nActual:\n{actualJson}\nDifferences:\n{JsonSerializer.Serialize(diff, JsonSerializerOptions)}");
     }
     
-    protected static void AssertFailed(StepFunctionStateResult result, string? expectedError = null, string? expectedCause = null)
+    protected static void AssertFailed(StepFunctionResult result, string? expectedError = null, string? expectedCause = null)
     {
-        Assert.That(result, Is.TypeOf<StepFunctionStateResult.Failed>());
-        var failedResult = (StepFunctionStateResult.Failed)result;
+        Assert.That(result.Result, Is.TypeOf<StepFunctionStateResult.Failed>());
+        var failedResult = (StepFunctionStateResult.Failed)result.Result;
 
         if (expectedError is not null)
         {
