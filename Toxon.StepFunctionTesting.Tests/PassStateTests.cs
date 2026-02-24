@@ -27,6 +27,8 @@ public class PassStateTests : TestBase
         var result = await runner.RunAsync(@"{""input"": true}", mocks);
 
         AssertSuccess(result, @"{""value"": 15}");
+        
+        Assert.That(result.Invocations, Has.One.Matches<StepFunctionStateInvocation>(x => x.State.StateName == "Output"));
     }
     
     [Test]
