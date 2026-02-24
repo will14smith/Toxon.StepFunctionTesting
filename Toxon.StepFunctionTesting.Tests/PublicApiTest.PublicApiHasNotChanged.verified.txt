@@ -18,16 +18,6 @@ namespace Toxon.StepFunctionTesting.Framework
         RepeatLast = 0,
         ThrowException = 1,
     }
-    public class StepFunctionExecutionContext : System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionExecutionContext>
-    {
-        public StepFunctionExecutionContext(System.Text.Json.JsonElement RootElement, System.Collections.Generic.IReadOnlyDictionary<string, Toxon.StepFunctionTesting.Framework.IMockProvider> Mocks, System.Collections.Immutable.ImmutableDictionary<string, int> Attempts, System.Collections.Immutable.ImmutableList<Toxon.StepFunctionTesting.Framework.StepFunctionStateInvocation> Invocations) { }
-        public System.Collections.Immutable.ImmutableDictionary<string, int> Attempts { get; init; }
-        public System.Collections.Immutable.ImmutableList<Toxon.StepFunctionTesting.Framework.StepFunctionStateInvocation> Invocations { get; init; }
-        public System.Collections.Generic.IReadOnlyDictionary<string, Toxon.StepFunctionTesting.Framework.IMockProvider> Mocks { get; init; }
-        public string? QueryLanguage { get; }
-        public System.Text.Json.JsonElement RootElement { get; init; }
-        public System.Text.Json.JsonElement GetStateElement(string stateName) { }
-    }
     public class StepFunctionResult : System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionResult>
     {
         public StepFunctionResult(Toxon.StepFunctionTesting.Framework.StepFunctionStateResult Result, System.Collections.Generic.IReadOnlyList<Toxon.StepFunctionTesting.Framework.StepFunctionStateInvocation> Invocations) { }

@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Toxon.StepFunctionTesting.Framework;
 
-public record StepFunctionExecutionContext(
+internal record StepFunctionExecutionContext(
     JsonElement RootElement,
     IReadOnlyDictionary<string, IMockProvider> Mocks,
     ImmutableDictionary<string, int> Attempts,
