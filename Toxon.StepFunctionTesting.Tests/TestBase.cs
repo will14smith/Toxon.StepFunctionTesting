@@ -17,22 +17,19 @@ public abstract class TestBase
         new StepFunctionRunnerOptions { RequireMocks = true }
     );
     
-    protected static void AssertSuccess(StepFunctionStateResult result, string expectedOutput)
+    protected static void AssertSuccess(StepFunctionResult result, string expectedOutput)
     {
-        Assert.That(result, Is.TypeOf<StepFunctionStateResult.Success>(), $"Expected result to be a success.\nActual:\n{result}");
-        var successResult = (StepFunctionStateResult.Success)result;
+        Assert.That(result.Result, Is.TypeOf<StepFunctionStateResult.Success>(), $"Expected result to be a success.\nActual:\n{result}");
+        var successResult = (StepFunctionStateResult.Success)result.Result;
 
-        var expectedJson = JsonNode.Parse(expectedOutput);
-        var actualJson = JsonNode.Parse(successResult.Output);
-
-        var diff = actualJson.CreatePatch(expectedJson);
-        Assert.That(diff.Operations, Is.Empty, $"Expected and actual JSON do not match.\nExpected:\n{expectedJson}\nActual:\n{actualJson}\nDifferences:\n{JsonSerializer.Serialize(diff, JsonSerializerOptions)}");
+        var diff = CompareJson(expectedOutput, successResult.Output);
+        Assert.That(diff.Operations, Is.Empty, $"Expected and actual JSON do not match.\nExpected:\n{expectedOutput}\nActual:\n{successResult.Output}\nDifferences:\n{JsonSerializer.Serialize(diff, JsonSerializerOptions)}");
     }
     
-    protected static void AssertFailed(StepFunctionStateResult result, string? expectedError = null, string? expectedCause = null)
+    protected static void AssertFailed(StepFunctionResult result, string? expectedError = null, string? expectedCause = null)
     {
-        Assert.That(result, Is.TypeOf<StepFunctionStateResult.Failed>());
-        var failedResult = (StepFunctionStateResult.Failed)result;
+        Assert.That(result.Result, Is.TypeOf<StepFunctionStateResult.Failed>());
+        var failedResult = (StepFunctionStateResult.Failed)result.Result;
 
         if (expectedError is not null)
         {
@@ -43,5 +40,14 @@ public abstract class TestBase
         {
             Assert.That(failedResult.Cause, Is.EqualTo(expectedCause));
         }
+    }
+    
+    protected static bool AreJsonEqual(string expected, string actual) => CompareJson(expected, actual).Operations.Count == 0;
+    protected static JsonPatch CompareJson(string expected, string actual)
+    {
+        var expectedJson = JsonNode.Parse(expected);
+        var actualJson = JsonNode.Parse(actual);
+
+        return actualJson.CreatePatch(expectedJson);
     }
 }

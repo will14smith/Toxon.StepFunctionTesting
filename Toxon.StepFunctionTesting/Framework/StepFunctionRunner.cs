@@ -12,7 +12,7 @@ public partial class StepFunctionRunner(
 {
     private const string DefaultQueryLanguage = "JSONPath";
     
-    public async Task<StepFunctionStateResult> RunAsync(
+    public async Task<StepFunctionResult> RunAsync(
         string input,
         IReadOnlyDictionary<string, IMockProvider> mocks,
         string? startAt = null,
@@ -24,7 +24,8 @@ public partial class StepFunctionRunner(
         var executionContext = new StepFunctionExecutionContext(
             root,
             mocks,
-            ImmutableDictionary<string, int>.Empty);
+            ImmutableDictionary<string, int>.Empty,
+            ImmutableList<StepFunctionStateInvocation>.Empty);
         
         startAt ??= root.GetProperty("StartAt").GetString() ?? throw new InvalidOperationException("State machine definition must contain a StartAt property.");
         
@@ -36,9 +37,9 @@ public partial class StepFunctionRunner(
             "{}"
         );
         
-        var (_, result) = await RunToCompletionAsync(executionContext, stateContext, cancellationToken);
+        (executionContext, var result) = await RunToCompletionAsync(executionContext, stateContext, cancellationToken);
 
-        return result;
+        return StepFunctionResult.From(executionContext, result);
     }
 
     private async Task<(StepFunctionExecutionContext, StepFunctionStateResult)> RunToCompletionAsync(StepFunctionExecutionContext executionContext, StepFunctionStateContext stateContext, CancellationToken cancellationToken)
@@ -164,6 +165,12 @@ public partial class StepFunctionRunner(
         
         var response = await stepFunctions.TestStateAsync(request, cancellationToken);
         var result = StepFunctionStateResult.FromResponse(response);
+
+        var invocation = new StepFunctionStateInvocation(stateContext, result, response.InspectionData);
+        executionContext = executionContext with
+        {
+            Invocations = executionContext.Invocations.Add(invocation)
+        };
         
         return (executionContext, result);
     }

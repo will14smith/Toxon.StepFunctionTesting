@@ -13,7 +13,7 @@ dotnet add package Toxon.StepFunctionTesting
 - Runs Step Function state transitions from a JSON definition
 - Supports mock sequences for task outcomes (`ThenReturn`, `ThenFail`)
 - Handles retries/catches via AWS Step Functions behavior
-- Returns typed results (`Success`, `Failed`, `CaughtError`, `Retriable`)
+- Returns a `StepFunctionResult` containing the typed result (`Success`, `Failed`, `CaughtError`, `Retriable`) and state invocation history
 
 ## Prerequisites
 
@@ -55,9 +55,14 @@ var mocks = new Dictionary<string, IMockProvider>
 
 var result = await runner.RunAsync("{}", mocks);
 
-if (result is StepFunctionStateResult.Success success)
+if (result.Result is StepFunctionStateResult.Success success)
 {
     Console.WriteLine(success.Output);
+}
+
+foreach (var invocation in result.Invocations)
+{
+    Console.WriteLine($"{invocation.State.StateName}: {invocation.Result.GetType().Name}");
 }
 ```
 
