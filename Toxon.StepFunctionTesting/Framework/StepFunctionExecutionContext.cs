@@ -7,7 +7,8 @@ internal record StepFunctionExecutionContext(
     JsonElement RootElement,
     IReadOnlyDictionary<string, IMockProvider> Mocks,
     ImmutableDictionary<string, int> Attempts,
-    ImmutableList<StepFunctionStateInvocation> Invocations
+    ImmutableList<StepFunctionStateInvocation> Invocations,
+    string ExecutionInput
 )
 {
     public string? QueryLanguage => RootElement.GetQueryLanguage();
