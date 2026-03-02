@@ -1,5 +1,10 @@
 name: Build & Test
 
+env:
+  AWS_REGION: eu-west-2
+  # super locked down - only allows `states:TestState` from `will14smith/Toxon.StepFunctionTesting`
+  AWS_TEST_ROLE_ARN: arn:aws:iam::682179218046:role/gha-StepFunctionTesting
+
 on:
   pull_request:
     branches: [ main ]
@@ -23,8 +28,8 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_TEST_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_TEST_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Restore
         run: dotnet restore Toxon.StepFunctionTesting.slnx
