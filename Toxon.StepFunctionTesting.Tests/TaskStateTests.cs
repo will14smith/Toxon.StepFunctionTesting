@@ -1,4 +1,4 @@
-﻿using Toxon.StepFunctionTesting.Framework;
+using Toxon.StepFunctionTesting.Framework;
 
 namespace Toxon.StepFunctionTesting.Tests;
 
@@ -53,6 +53,8 @@ public class TaskStateTests : TestBase
         {
             ["FirstTask"] = new MockSequence()
                 .ThenReturn("{\"result\": \"processed\"}"),
+            ["CaptureOriginalInput"] = new MockSequence()
+                .ThenReturn("{\"result\": \"captured\"}"),
             ["SecondTask"] = new MockSequence()
                 .ThenReturn("{\"final\": \"done\"}")
         };
@@ -71,12 +73,17 @@ public class TaskStateTests : TestBase
                                         "Next": "CaptureOriginalInput"
                                       },
                                       "CaptureOriginalInput": {
-                                        "Type": "Pass",
-                                        "Next": "SecondTask",
-                                        "Assign": {
+                                        "Type": "Task",
+                                        "Resource": "arn:aws:states:::lambda:invoke",
+                                        "Arguments": {
+                                          "FunctionName": "processData",
+                                          "Payload": null
+                                        },
+                                        "Output": {
                                           "originalValue": "{% $states.context.Execution.Input.originalData %}",
                                           "taskResult": "{% $states.input.result %}"
-                                        }
+                                        },
+                                        "Next": "SecondTask"
                                       },
                                       "SecondTask": {
                                         "Type": "Task",
@@ -99,6 +106,6 @@ public class TaskStateTests : TestBase
         var captureOutput = captureState.Result as StepFunctionStateResult.Success;
         Assert.That(captureOutput, Is.Not.Null);
         Assert.That(captureOutput!.Output, Does.Contain("test-value-123"),
-            "The Pass state should be able to access the original execution input via $states.context.Execution.Input after a Task state");
+            "The Task state should be able to access the original execution input via $states.context.Execution.Input after a Task state");
     }
 }
