@@ -85,7 +85,11 @@ var mocks = new Dictionary<string, IMockProvider>
 - If `RequireMocks` is `true`, ALL task states must have mocks.
 - `SkipWaitStates` is recommended for test speed, but will not evaluate any expression for wait duration or any assignments/state transformation on Wait states
 - Parallel states are handled by running branches and combining outputs.
-- Map states are supported for INLINE maps but not for DISTRIBUTED, however both can be mocked. 
+- Map states are supported for INLINE maps but not for DISTRIBUTED, however both can be mocked.
+- **`$states.context.Execution.Input` limitation**: Due to AWS TestState API restrictions, execution context (including `Execution.Input`) can only be provided when a mock is supplied, and mocks can only be provided for Task/Parallel/Map states. This means:
+  - `$states.context.Execution.Input` is available in mocked Task/Parallel/Map states
+  - `$states.context.Execution.Input` is **not available** in Pass, Choice, Wait, Succeed, or Fail states
+  - **Workaround**: Capture needed values from the original input in an initial Pass state using `Assign` before any Task states, then reference those variables throughout the execution 
 
 ## CI usage (GitHub Actions)
 

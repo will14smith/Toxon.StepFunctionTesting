@@ -25,7 +25,8 @@ public partial class StepFunctionRunner(
             root,
             mocks,
             ImmutableDictionary<string, int>.Empty,
-            ImmutableList<StepFunctionStateInvocation>.Empty);
+            ImmutableList<StepFunctionStateInvocation>.Empty,
+            input);
         
         startAt ??= root.GetProperty("StartAt").GetString() ?? throw new InvalidOperationException("State machine definition must contain a StartAt property.");
         
@@ -146,19 +147,42 @@ public partial class StepFunctionRunner(
         var attempt = CollectionExtensions.GetValueOrDefault(executionContext.Attempts, stateName, 0);
         var newAttempts = executionContext.Attempts.SetItem(stateName, attempt + 1);
         executionContext = executionContext with { Attempts = newAttempts };
-        
+
+        // Context can only be provided when a mock is supplied (TestState API limitation)
         if (mock != null)
         {
             request.Mock = mock;
             request.StateConfiguration ??= new TestStateConfiguration();
             request.StateConfiguration.RetrierRetryCount = attempt;
 
+            // Build execution context with Execution.Input for JSONata support
+            var executionId = options.ExecutionId ?? $"arn:aws:states:us-east-1:123456789012:execution:test:{Guid.NewGuid()}";
+            var executionName = options.ExecutionName ?? $"test-{Guid.NewGuid()}";
+
+            var contextBuilder = new System.Text.StringBuilder();
+            contextBuilder.Append("{");
+            contextBuilder.Append("\"Execution\":{");
+            contextBuilder.Append($"\"Id\":\"{executionId}\",");
+            contextBuilder.Append($"\"Name\":\"{executionName}\",");
+            contextBuilder.Append($"\"Input\":{executionContext.ExecutionInput},");
+            contextBuilder.Append($"\"StartTime\":\"{DateTime.UtcNow:O}\"");
+            contextBuilder.Append("},");
+            contextBuilder.Append("\"StateMachine\":{");
+            contextBuilder.Append($"\"Id\":\"{options.StateMachineArn ?? "arn:aws:states:us-east-1:123456789012:stateMachine:test"}\"");
+            contextBuilder.Append("}");
+
             if (stateElement.RequiresTaskToken())
             {
-                request.Context = $"{{\"Task\": {{\"Token\": \"{Guid.NewGuid()}\"}}}}";
+                contextBuilder.Append(",\"Task\":{");
+                contextBuilder.Append($"\"Token\":\"{Guid.NewGuid()}\"");
+                contextBuilder.Append("}");
             }
+
+            contextBuilder.Append("}");
+            request.Context = contextBuilder.ToString();
         }
-        else if (options.RequireMocks && stateElement.IsTaskState())
+
+        if (mock == null && options.RequireMocks && stateElement.IsTaskState())
         {
             throw new InvalidOperationException($"State '{stateName}' requires a mock, but none was provided.");
         }
