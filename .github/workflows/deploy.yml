@@ -8,10 +8,11 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  packages: write
   id-token: write
 
 jobs:
-  deploy:
+  release:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -44,9 +45,9 @@ jobs:
         uses: googleapis/release-please-action@v4
 
   publish:
-    needs: deploy
+    needs: release
     runs-on: ubuntu-latest
-    if: ${{ needs.deploy.outputs.release_created == 'true' }}
+    if: ${{ needs.release.outputs.release_created == 'true' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -66,4 +67,4 @@ jobs:
           user: ${{ secrets.NUGET_USER }}
       
       - name: Publish package to NuGet.org
-        run: dotnet nuget push ./*.nupkg --skip-duplicate --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ./artifacts/*.nupkg --skip-duplicate --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
