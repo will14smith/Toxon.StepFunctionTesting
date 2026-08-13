@@ -11,10 +11,12 @@ public abstract class TestBase
     
     private readonly static JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
 
-    protected StepFunctionRunner CreateRunner(string definition) => new(
+    protected StepFunctionRunner CreateRunner(string definition) => CreateRunner(definition, new StepFunctionRunnerOptions { RequireMocks = true });
+
+    protected StepFunctionRunner CreateRunner(string definition, StepFunctionRunnerOptions options) => new(
         new AmazonStepFunctionsClient(),
         definition,
-        new StepFunctionRunnerOptions { RequireMocks = true }
+        options
     );
     
     protected static void AssertSuccess(StepFunctionResult result, string expectedOutput)

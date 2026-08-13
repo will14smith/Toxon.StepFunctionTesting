@@ -25,7 +25,8 @@ public partial class StepFunctionRunner(
             root,
             mocks,
             ImmutableDictionary<string, int>.Empty,
-            ImmutableList<StepFunctionStateInvocation>.Empty);
+            ImmutableList<StepFunctionStateInvocation>.Empty,
+            StepFunctionContextObject.Create(options, input));
         
         startAt ??= root.GetProperty("StartAt").GetString() ?? throw new InvalidOperationException("State machine definition must contain a StartAt property.");
         
@@ -153,10 +154,9 @@ public partial class StepFunctionRunner(
             request.StateConfiguration ??= new TestStateConfiguration();
             request.StateConfiguration.RetrierRetryCount = attempt;
 
-            if (stateElement.RequiresTaskToken())
-            {
-                request.Context = $"{{\"Task\": {{\"Token\": \"{Guid.NewGuid()}\"}}}}";
-            }
+            // TestState only accepts a context object when a mock is also supplied.
+            var taskToken = stateElement.RequiresTaskToken() ? Guid.NewGuid().ToString() : null;
+            request.Context = executionContext.Context.ToJson(stateName, attempt, taskToken);
         }
         else if (options.RequireMocks && stateElement.IsTaskState())
         {
