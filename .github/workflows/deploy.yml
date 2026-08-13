@@ -13,6 +13,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
 
     steps:
       - uses: actions/checkout@v4
@@ -41,10 +43,27 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
 
+  publish:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: ${{ needs.deploy.outputs.release_created == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+            
       - name: Pack NuGet package
-        if: ${{ steps.release.outputs.release_created }}
         run: dotnet pack Toxon.StepFunctionTesting/Toxon.StepFunctionTesting.csproj --configuration Release --no-build -o artifacts/
 
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      
       - name: Publish package to NuGet.org
-        if: ${{ steps.release.outputs.release_created }}
-        run: dotnet nuget push ./artifacts/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ./*.nupkg --skip-duplicate --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
