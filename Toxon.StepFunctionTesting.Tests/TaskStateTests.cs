@@ -10,7 +10,7 @@ public class TaskStateTests : TestBase
         var mocks = new Dictionary<string, IMockProvider>
         {
             ["Work"] = new MockSequence()
-                .ThenReturn("{\"Payload\": {\"calculation\": 7}}")
+                .ThenReturn("{\"Payload\": {\"calculation\": 11}}")
         };
         var runner = CreateRunner("""
                                   {
