@@ -1,15 +1,17 @@
 name: AWS Test Run
 
-# Runs after "Build & Test" completes. Unlike a pull_request trigger, workflow_run
+# Runs after "PR" completes. Unlike a pull_request trigger, workflow_run
 # always executes using the workflow definition from the default branch, in the base
 # repo's security context - so it has access to secrets and OIDC (id-token: write)
-# even for PRs from forks. To avoid ever building/executing untrusted fork code with
-# credentials present, we only download the already-built test binaries produced by
-# the build job and run them.
+# even for PRs from forks. We check out and build the PR's commit ourselves (rather
+# than reusing binaries built by the fork-safe workflow) because tools like
+# Verify.NUnit resolve their `.verified.txt` snapshots via the source tree, not the
+# build output - AWS credentials are only configured after the build step, so
+# untrusted build-time code (NuGet/MSBuild) never runs with secrets present.
 
 on:
   workflow_run:
-    workflows: [ "Build & Test" ]
+    workflows: [ "PR" ]
     types: [ completed ]
 
 env:
@@ -20,7 +22,6 @@ env:
 permissions:
   contents: read
   id-token: write
-  actions: read
   checks: write
   statuses: write
 
@@ -39,18 +40,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download test binaries
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: test-output
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: test-output
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Toxon.StepFunctionTesting.slnx
+
+      - name: Build
+        run: dotnet build Toxon.StepFunctionTesting.slnx --configuration Release --no-restore
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -60,7 +65,7 @@ jobs:
 
       - name: Test
         id: test
-        run: dotnet test test-output/Toxon.StepFunctionTesting.Tests.dll
+        run: dotnet test Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj --configuration Release --no-build
 
       - name: Set final status
         if: always()
