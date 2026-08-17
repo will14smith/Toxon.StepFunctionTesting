@@ -38,7 +38,7 @@ jobs:
         run: dotnet build Toxon.StepFunctionTesting.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj --configuration Release --no-build
+        run: dotnet test Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj --configuration Release --no-build --verbosity normal
 
       - name: Release
         id: release
