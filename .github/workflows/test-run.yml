@@ -1,0 +1,74 @@
+name: AWS Test Run
+
+# Runs after "Build & Test" completes. Unlike a pull_request trigger, workflow_run
+# always executes using the workflow definition from the default branch, in the base
+# repo's security context - so it has access to secrets and OIDC (id-token: write)
+# even for PRs from forks. To avoid ever building/executing untrusted fork code with
+# credentials present, we only download the already-built test binaries produced by
+# the build job and run them.
+
+on:
+  workflow_run:
+    workflows: [ "Build & Test" ]
+    types: [ completed ]
+
+env:
+  AWS_REGION: eu-west-2
+  # super locked down - only allows `states:TestState` from `will14smith/Toxon.StepFunctionTesting`
+  AWS_TEST_ROLE_ARN: arn:aws:iam::682179218046:role/gha-StepFunctionTesting
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+  checks: write
+  statuses: write
+
+jobs:
+  test:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set status to pending
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_sha }} \
+            -f state=pending \
+            -f context='AWS Test Run' \
+            -f description='Running tests against AWS...'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download test binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: test-output
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-output
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_TEST_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Test
+        id: test
+        run: dotnet test test-output/Toxon.StepFunctionTesting.Tests.dll
+
+      - name: Set final status
+        if: always()
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_sha }} \
+            -f state='${{ steps.test.outcome == 'success' && 'success' || 'failure' }}' \
+            -f context='AWS Test Run' \
+            -f description='Tests ${{ steps.test.outcome == 'success' && 'passed' || 'failed' }}' \
+            -f target_url='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

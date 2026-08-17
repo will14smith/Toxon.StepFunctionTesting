@@ -2,6 +2,7 @@
   <Folder Name="/Build/">
     <File Path=".github/workflows/deploy.yml" />
     <File Path=".github/workflows/pull-request-lint.yml" />
+    <File Path=".github/workflows/test-run.yml" />
     <File Path=".github/workflows/test.yml" />
   </Folder>
   <Project Path="Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj" />
