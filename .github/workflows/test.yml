@@ -1,0 +1,42 @@
+name: Build & Test
+
+env:
+  AWS_REGION: eu-west-2
+  # super locked down - only allows `states:TestState` from `will14smith/Toxon.StepFunctionTesting`
+  AWS_TEST_ROLE_ARN: arn:aws:iam::682179218046:role/gha-StepFunctionTesting
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    environment: aws-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Toxon.StepFunctionTesting.slnx
+
+      - name: Build
+        run: dotnet build Toxon.StepFunctionTesting.slnx --configuration Release --no-restore
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_TEST_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Test
+        run: dotnet test Toxon.StepFunctionTesting.Tests/Toxon.StepFunctionTesting.Tests.csproj --configuration Release --no-build
