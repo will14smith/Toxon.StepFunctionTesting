@@ -58,7 +58,7 @@ jobs:
           dotnet-version: 10.0.x
             
       - name: Pack NuGet package
-        run: dotnet pack Toxon.StepFunctionTesting/Toxon.StepFunctionTesting.csproj --configuration Release --no-build -o artifacts/
+        run: dotnet pack Toxon.StepFunctionTesting/Toxon.StepFunctionTesting.csproj --configuration Release -o artifacts/
 
       - name: NuGet login
         uses: NuGet/login@v1
