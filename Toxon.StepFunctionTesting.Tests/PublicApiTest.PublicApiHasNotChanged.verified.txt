@@ -32,9 +32,11 @@ namespace Toxon.StepFunctionTesting.Framework
     public sealed class StepFunctionRunnerOptions
     {
         public StepFunctionRunnerOptions() { }
+        public string? ExecutionName { get; init; }
         public bool RequireMocks { get; init; }
         public string? RoleArn { get; init; }
         public bool SkipWaitStates { get; init; }
+        public string? StateMachineName { get; init; }
     }
     public class StepFunctionStateContext : System.IEquatable<Toxon.StepFunctionTesting.Framework.StepFunctionStateContext>
     {
