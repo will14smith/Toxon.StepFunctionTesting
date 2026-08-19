@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/will14smith/Toxon.StepFunctionTesting/compare/Toxon.StepFunctionTesting-v2.0.0...Toxon.StepFunctionTesting-v2.0.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* packaging needs to build the project ([#20](https://github.com/will14smith/Toxon.StepFunctionTesting/issues/20)) ([4e3c45e](https://github.com/will14smith/Toxon.StepFunctionTesting/commit/4e3c45e6a8da01ec2a1126dc29d7aadf62c0c22b))
+
 ## [2.0.0](https://github.com/will14smith/Toxon.StepFunctionTesting/compare/Toxon.StepFunctionTesting-v1.1.0...Toxon.StepFunctionTesting-v2.0.0) (2026-08-19)
 
 
